@@ -34,3 +34,4 @@ node_modules
 
 # config
 config.js
+*.temp

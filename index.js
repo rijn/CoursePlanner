@@ -468,8 +468,8 @@ var fs = require('fs');
 function getCourseList(sharedObject) {
     var deferred = Q.defer();
 
-    if (fs.existsSync('requestCourseList')) {
-        fs.readFile('requestCourseList', (err, data) => {
+    if (fs.existsSync('requestCourseList.temp')) {
+        fs.readFile('requestCourseList.temp', (err, data) => {
             if (err) {
                 deferred.reject(err);
             };
@@ -560,7 +560,7 @@ function getCourseList(sharedObject) {
                 combineCookies(res.headers['set-cookie']);
                 // console.log('DATA'.data, data.data);
                 sharedObject.courseRawData = data;
-                fs.writeFile('requestCourseList', data, (err) => {
+                fs.writeFile('requestCourseList.temp', data, (err) => {
                     if (err) {
                         deferred.reject(err)
                     };
@@ -678,7 +678,7 @@ function writeTree(sharedObject) {
 
     // data = JSON.stringify(sharedObject.courseTree);
 
-    fs.writeFile('courseTree', data, (err) => {
+    fs.writeFile('courseTree.temp', data, (err) => {
         if (err) {
             deferred.reject(err)
         };
