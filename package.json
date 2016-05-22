@@ -19,6 +19,7 @@
   "dependencies": {
     "colors": "^1.1.2",
     "cookie": "^0.2.4",
+    "htmlparser2": "^3.9.0",
     "http": "0.0.0",
     "md5": "^2.1.0",
     "q": "^1.4.1",

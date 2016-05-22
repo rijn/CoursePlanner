@@ -42,7 +42,9 @@ colors.setTheme({
     result: 'green',
 });
 
-var cookie = [];
+var sharedObject = {
+    'cookie': []
+};
 
 var combineCookies = function(newCookie) {
     if (newCookie) {
@@ -52,20 +54,20 @@ var combineCookies = function(newCookie) {
     }
     for (var i in newCookie) {
         var key = newCookie[i].split('=')[0];
-        for (var j = 0; j < cookie.length; j++) {
-            if (cookie[j].indexOf(key) >= 0) {
-                cookie[j] = newCookie[i];
+        for (var j = 0; j < sharedObject.cookie.length; j++) {
+            if (sharedObject.cookie[j].indexOf(key) >= 0) {
+                sharedObject.cookie[j] = newCookie[i];
                 key = 'COOKIEFLAG';
             }
         }
         if (key != 'COOKIEFLAG') {
-            cookie.push(newCookie[i]);
+            sharedObject.cookie.push(newCookie[i]);
         }
     }
 }
 
 // get status
-function requestEAS(cookie) {
+function requestEAS(sharedObject) {
     var deferred = Q.defer();
 
     var options = {
@@ -76,7 +78,7 @@ function requestEAS(cookie) {
         headers: {
             'Host': 'eas.admin.uillinois.edu',
             'Upgrade-Insecure-Requests': 1,
-            'Cookie': cookie.join(';'),
+            'Cookie': sharedObject.cookie.join(';'),
             'User-Agent': 'Paw/2.1 (Macintosh; OS X/10.10.1) GCDHTTPRequest'
         }
     };
@@ -96,7 +98,7 @@ function requestEAS(cookie) {
         res.on('end', () => {
             combineCookies(res.headers['set-cookie']);
             // console.log('cookie : ', cookie);
-            deferred.resolve(cookie);
+            deferred.resolve(sharedObject);
         });
     });
     req.end();
@@ -109,7 +111,7 @@ function requestEAS(cookie) {
 }
 
 // login through EAS
-function loginEAS(cookie) {
+function loginEAS(sharedObject) {
     var deferred = Q.defer();
 
     var postData = querystring.stringify({
@@ -128,7 +130,7 @@ function loginEAS(cookie) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Content-Length': postData.length,
-            'Cookie': cookie.join(';'),
+            'Cookie': sharedObject.cookie.join(';'),
         }
     };
 
@@ -147,7 +149,7 @@ function loginEAS(cookie) {
         res.on('end', () => {
             combineCookies(res.headers['set-cookie']);
             // console.log('No more data in response.')
-            deferred.resolve(cookie);
+            deferred.resolve(sharedObject);
         })
     });
 
@@ -163,7 +165,7 @@ function loginEAS(cookie) {
 };
 
 // get status
-function loginSelfService(cookie) {
+function loginSelfService(sharedObject) {
     var deferred = Q.defer();
 
     var options = {
@@ -174,7 +176,7 @@ function loginSelfService(cookie) {
         headers: {
             'Host': 'webprod.admin.uillinois.edu',
             'Upgrade-Insecure-Requests': 1,
-            'Cookie': cookie.join(';'),
+            'Cookie': sharedObject.cookie.join(';'),
             'User-Agent': 'Paw/2.1 (Macintosh; OS X/10.10.1) GCDHTTPRequest',
             'Referer': 'https://eas.admin.uillinois.edu/eas/servlet/EasLogin',
         }
@@ -195,8 +197,8 @@ function loginSelfService(cookie) {
         res.on('end', () => {
             combineCookies(res.headers['set-cookie']);
             console.log('redirect location'.result, res.headers['location']);
-            cookie['location'] = res.headers['location'];
-            deferred.resolve(cookie);
+            sharedObject.location = res.headers['location'];
+            deferred.resolve(sharedObject);
         });
     });
     req.end();
@@ -208,22 +210,22 @@ function loginSelfService(cookie) {
     return deferred.promise;
 }
 
-function checkLoginStatus(cookie) {
+function checkLoginStatus(sharedObject) {
     var deferred = Q.defer();
-    for (var i in cookie) {
-        if (cookie[i].indexOf('ApplicationSessionId') == 0 && cookie.hasOwnProperty('location')) {
+    for (var i in sharedObject.cookie) {
+        if (sharedObject.cookie[i].indexOf('ApplicationSessionId') == 0 && sharedObject.hasOwnProperty('location')) {
             console.log('\ngot session id, login successfully.'.warn);
-            deferred.resolve(cookie);
+            deferred.resolve(sharedObject);
         }
     }
     deferred.reject('login failed.');
     return deferred.promise;
 }
 
-function loginUiauthent(cookie) {
+function loginUiauthent(sharedObject) {
     var deferred = Q.defer();
 
-    var location = cookie['location'];
+    var location = sharedObject['location'];
     location = location.substring(8);
 
     var options = {
@@ -234,7 +236,7 @@ function loginUiauthent(cookie) {
         headers: {
             'Host': 'ui2web1.apps.uillinois.edu',
             'Upgrade-Insecure-Requests': 1,
-            'Cookie': cookie.join(';'),
+            'Cookie': sharedObject.cookie.join(';'),
             'User-Agent': 'Paw/2.1 (Macintosh; OS X/10.10.1) GCDHTTPRequest',
             'Referer': 'https://eas.admin.uillinois.edu/eas/servlet/EasLogin',
         }
@@ -262,7 +264,7 @@ function loginUiauthent(cookie) {
             match_data = regexp.exec(data);
             data = match_data[1].replace(/\+/g, ' ').replace(/<([a-zA-Z0-9%]*)>/g, ' ').replace('%3A', ':');
             console.log('MSG'.result, data);
-            deferred.resolve(cookie);
+            deferred.resolve(sharedObject);
         });
     });
     req.end();
@@ -274,7 +276,7 @@ function loginUiauthent(cookie) {
     return deferred.promise;
 }
 
-function getStudentInfoTermList(cookie) {
+function getStudentInfoTermList(sharedObject) {
     var deferred = Q.defer();
 
     var options = {
@@ -285,7 +287,7 @@ function getStudentInfoTermList(cookie) {
         headers: {
             'Host': 'ui2web1.apps.uillinois.edu',
             'Upgrade-Insecure-Requests': 1,
-            'Cookie': cookie.join(';'),
+            'Cookie': sharedObject.cookie.join(';'),
             'User-Agent': 'Paw/2.1 (Macintosh; OS X/10.10.1) GCDHTTPRequest',
             'Referer': 'https://ui2web1.apps.uillinois.edu/BANPROD1/twbkwbis.P_GenMenu?name=bmenu.P_AdminMnu',
         }
@@ -313,8 +315,8 @@ function getStudentInfoTermList(cookie) {
             match_data = regexp.exec(data);
             console.log('\n', match_data[2].warn);
             data = match_data[1];
-            cookie['termIn'] = data;
-            deferred.resolve(cookie);
+            sharedObject['termIn'] = data;
+            deferred.resolve(sharedObject);
         });
     });
     req.end();
@@ -326,11 +328,11 @@ function getStudentInfoTermList(cookie) {
     return deferred.promise;
 }
 
-function requestStudentInfo(cookie) {
+function requestStudentInfo(sharedObject) {
     var deferred = Q.defer();
 
     var postData = querystring.stringify({
-        'term_in': cookie['termIn'],
+        'term_in': sharedObject['termIn'],
     });
 
     var options = {
@@ -343,7 +345,7 @@ function requestStudentInfo(cookie) {
             'Origin': 'https://ui2web1.apps.uillinois.edu',
             'Content-Type': 'application/x-www-form-urlencoded',
             'Upgrade-Insecure-Requests': 1,
-            'Cookie': cookie.join(';'),
+            'Cookie': sharedObject.cookie.join(';'),
             'User-Agent': 'Paw/2.1 (Macintosh; OS X/10.10.1) GCDHTTPRequest',
             'Referer': 'https://ui2web1.apps.uillinois.edu/BANPROD1/bwskgstu.P_StuInfo',
             'Content-Length': postData.length,
@@ -382,7 +384,7 @@ function requestStudentInfo(cookie) {
             }
             console.log('\nstudent info'.warn);
             console.log(match_data.join('\n'));
-            deferred.resolve(cookie);
+            deferred.resolve(sharedObject);
         });
     });
     req.write(postData);
@@ -395,19 +397,197 @@ function requestStudentInfo(cookie) {
     return deferred.promise;
 }
 
+function getSubjectList(sharedObject) {
+    var deferred = Q.defer();
+
+    var postData = querystring.stringify({
+        'p_term': sharedObject['termIn'],
+        'p_calling_proc': 'P_CrseSearch',
+    });
+
+    var options = {
+        hostname: 'ui2web1.apps.uillinois.edu',
+        port: 443,
+        path: '/BANPROD1/bwckgens.p_proc_term_date',
+        method: 'POST',
+        headers: {
+            'Host': 'ui2web1.apps.uillinois.edu',
+            'Origin': 'https://ui2web1.apps.uillinois.edu',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Upgrade-Insecure-Requests': 1,
+            'Cookie': sharedObject.cookie.join(';'),
+            'User-Agent': 'Paw/2.1 (Macintosh; OS X/10.10.1) GCDHTTPRequest',
+            'Referer': 'https://ui2web1.apps.uillinois.edu/BANPROD1/bwskfcls.p_sel_crse_search',
+            'Content-Length': postData.length,
+        }
+    };
+
+    console.log('\nREQUEST'.request, options.hostname + options.path);
+
+    var data = '';
+
+    var req = https.request(options, (res) => {
+        console.log('STATUS'.result, res.statusCode);
+        if (config.debug) {
+            console.log('HEADERS'.data, res.headers);
+        }
+
+        res.on('data', (d) => {
+            data += d;
+            // process.stdout.write(d);
+        });
+
+        res.on('end', () => {
+            combineCookies(res.headers['set-cookie']);
+            // console.log('DATA'.data, data.data);
+            var match_data = data.match(/\<OPTION VALUE=\"([A-Z]*)\"\>([a-zA-Z0-9.,'\/&\-\s]*)\<\/OPTION\>/g);
+            var subjectList = [];
+            for (var i = 0; i < match_data.length; i++) {
+                var item = match_data[i].replace('<OPTION VALUE="', '')
+                    .replace('</OPTION>', '').split('">');
+                subjectList[item[0]] = item[1];
+            }
+            console.log(('\ngot ' + i + ' subjects').warn);
+            // console.log(subjectList);
+            sharedObject['subjectList'] = subjectList;
+            deferred.resolve(sharedObject);
+        });
+    });
+    req.write(postData);
+    req.end();
+
+    req.on('error', (e) => {
+        console.error(e);
+    });
+
+    return deferred.promise;
+}
+
+var fs = require('fs');
+
+function getCourseList(sharedObject) {
+    var deferred = Q.defer();
+
+    var postData = querystring.stringify({
+        'rsts': 'dummy',
+        'crn': 'dummy',
+        'term_in': sharedObject['termIn'],
+        'sel_subj': 'dummy',
+        'sel_day': 'dummy',
+        'sel_schd': 'dummy',
+        'sel_insm': 'dummy',
+        'sel_camp': 'dummy',
+        'sel_levl': 'dummy',
+        'sel_sess': 'dummy',
+        'sel_instr': 'dummy',
+        'sel_ptrm': 'dummy',
+        'sel_attr': 'dummy',
+        'sel_crse': '',
+        'sel_title': '',
+        'sel_from_cred': '',
+        'sel_to_cred': '',
+        'sel_ptrm': '%',
+        'begin_hh': '0',
+        'begin_mi': '0',
+        'end_hh': '0',
+        'end_mi': '0',
+        'begin_ap': 'x',
+        'end_ap': 'y',
+        'path': '1',
+        'SUB_BTN': 'Course Search',
+    });
+
+    for (var i in sharedObject['subjectList']) {
+        postData += '&sel_subj=' + i;
+    }
+
+    var options = {
+        hostname: 'ui2web1.apps.uillinois.edu',
+        port: 443,
+        path: '/BANPROD1/bwskfcls.P_GetCrse',
+        method: 'POST',
+        headers: {
+            'Host': 'ui2web1.apps.uillinois.edu',
+            'Origin': 'https://ui2web1.apps.uillinois.edu',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Upgrade-Insecure-Requests': 1,
+            'Cookie': sharedObject.cookie.join(';'),
+            'User-Agent': 'Paw/2.1 (Macintosh; OS X/10.10.1) GCDHTTPRequest',
+            'Referer': 'https://ui2web1.apps.uillinois.edu/BANPROD1/bwckgens.p_proc_term_date',
+            'Content-Length': postData.length,
+        }
+    };
+
+    console.log('\nREQUEST'.request, options.hostname + options.path);
+    // console.log('post data'.data, postData);
+
+    var data = '';
+
+    var req = https.request(options, (res) => {
+        console.log('STATUS'.result, res.statusCode);
+        if (config.debug) {
+            console.log('HEADERS'.data, res.headers);
+        }
+
+        var contentLength = res.headers['content-length'];
+
+        res.on('data', (d) => {
+            data += d;
+            process.stdout.write("Downloading " + data.length + " bytes ");
+            for (var i = 0; i < 20; i++) {
+                if (i / 20 < data.length / contentLength) {
+                    process.stdout.write("▓");
+                } else {
+                    process.stdout.write("▓".gray);
+                }
+            }
+            process.stdout.write("\r");
+            // process.stdout.write(d);
+        });
+
+        res.on('end', () => {
+            combineCookies(res.headers['set-cookie']);
+            // console.log('DATA'.data, data.data);
+            fs.writeFile('requestCourseList', data, (err) => {
+                if (err) throw err;
+                console.log('\nresult saved'.result);
+                deferred.resolve(sharedObject);
+            });
+        });
+    });
+
+
+    req.write(postData);
+    req.end();
+
+    req.on('error', (e) => {
+        console.error(e);
+    });
+
+    return deferred.promise;
+}
+
+function parseCourseList(sharedObject) {
+    var deferred = Q.defer();
+    deferred.resolve(sharedObject);
+    return deferred.promise;
+}
+
 console.log('\nrunning...'.warn);
 
-requestEAS(cookie)
+requestEAS(sharedObject)
     .then(loginEAS)
     .then(loginSelfService)
     .then(checkLoginStatus)
     .then(loginUiauthent)
     .then(getStudentInfoTermList)
     .then(requestStudentInfo)
+    .then(getSubjectList)
+    .then(getCourseList)
     .then(
-        function(cookie) {
+        function(sharedObject) {
             if (config.debug) {
-                console.log('\ncookie:', cookie);
+                // console.log('\ncookie:', sharedObject.cookie);
             }
         },
         function(err) {
