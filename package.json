@@ -1,0 +1,28 @@
+{
+  "name": "courseplanner",
+  "version": "1.0.0",
+  "description": "for UIUC",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://rijn@github.com/rijn/CoursePlanner.git"
+  },
+  "author": "Rijn",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rijn/CoursePlanner/issues"
+  },
+  "homepage": "https://github.com/rijn/CoursePlanner#readme",
+  "dependencies": {
+    "colors": "^1.1.2",
+    "cookie": "^0.2.4",
+    "http": "0.0.0",
+    "md5": "^2.1.0",
+    "q": "^1.4.1",
+    "querystring": "^0.2.0",
+    "request": "^2.72.0"
+  }
+}
