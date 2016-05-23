@@ -1,4 +1,5 @@
 module.exports = {
+
     combineCookies: function(newCookie, sharedObject) {
         if (newCookie) {
             for (var i = 0; i < newCookie.length; i++) {
@@ -18,6 +19,7 @@ module.exports = {
             }
         }
     },
+
     getConfig: function() {
         var defaultConfig = require('./config.default');
         var config = defaultConfig;
@@ -38,5 +40,24 @@ module.exports = {
         }
 
         return config;
-    }
+    },
+
+    throwErr: function(err) {
+        const colors = require('colors');
+        console.log('\n', err.red);
+        throw err;
+    },
+
+    colorSetTheme: function(colors) {
+        colors.setTheme({
+            info: 'green',
+            data: 'grey',
+            help: 'cyan',
+            warn: 'yellow',
+            debug: 'blue',
+            error: 'red',
+            request: 'cyan',
+            result: 'green',
+        });
+    },
 };

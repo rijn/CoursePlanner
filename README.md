@@ -3,7 +3,7 @@ for UIUC
 
 ### Environment
 ```
-# install node and npm first
+# install node 6.2.0 and npm first
 
 # install the dependencies
 $ npm install
@@ -19,4 +19,8 @@ module.exports = {
 }
 ```
 
-2. Run `npm start getcourselist`
+2. Run
+```
+npm start getcourselist
+npm start getstudentinfo
+```

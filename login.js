@@ -1,26 +1,12 @@
-const http = require("http");
 const https = require('https');
 const Q = require('q');
 const querystring = require('querystring');
 const colors = require('colors');
 
-var util = require('./util');
+const util = require('./util');
 var config = util.getConfig();
 
-colors.setTheme({
-    silly: 'rainbow',
-    input: 'grey',
-    verbose: 'cyan',
-    prompt: 'grey',
-    info: 'green',
-    data: 'grey',
-    help: 'cyan',
-    warn: 'yellow',
-    debug: 'blue',
-    error: 'red',
-    request: 'cyan',
-    result: 'green',
-});
+util.colorSetTheme(colors);
 
 module.exports = {
 
@@ -232,5 +218,21 @@ module.exports = {
         });
 
         return deferred.promise;
+    },
+
+    login: function(sharedObject) {
+        var funcs = [
+            this.loginEAS,
+            this.loginSelfService,
+            this.checkLoginStatus,
+            this.loginUiauthent
+        ];
+
+        var result = Q.fcall(this.requestEAS, sharedObject);
+        funcs.forEach(function(f) {
+            result = result.then(f);
+        });
+
+        return result;
     }
 };
