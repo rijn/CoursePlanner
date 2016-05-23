@@ -1,27 +1,15 @@
 // Load user config
 
-var defaultConfig = require('./config.default');
-var config = defaultConfig;
-
-try {
-    var userConfig = require('./config');
-} catch (e) {
-    console.log('Could not find user config');
-    return;
-}
-
-for (var i in defaultConfig) {
-    if (userConfig.hasOwnProperty(i)) {
-        config[i] = userConfig[i];
-    }
-}
+var login = require('./login');
+const util = require('./util');
+var config = util.getConfig();
 
 console.log('User config = ', config);
 
 // include dependencies
 
 var http = require("http");
-const https = require('https');
+var https = require('https');
 var Q = require('q');
 var md5 = require('md5');
 var querystring = require('querystring');
@@ -46,235 +34,6 @@ var sharedObject = {
     'cookie': []
 };
 
-var combineCookies = function(newCookie) {
-    if (newCookie) {
-        for (var i = 0; i < newCookie.length; i++) {
-            newCookie[i] = newCookie[i].split(';')[0];
-        }
-    }
-    for (var i in newCookie) {
-        var key = newCookie[i].split('=')[0];
-        for (var j = 0; j < sharedObject.cookie.length; j++) {
-            if (sharedObject.cookie[j].indexOf(key) >= 0) {
-                sharedObject.cookie[j] = newCookie[i];
-                key = 'COOKIEFLAG';
-            }
-        }
-        if (key != 'COOKIEFLAG') {
-            sharedObject.cookie.push(newCookie[i]);
-        }
-    }
-}
-
-// get status
-function requestEAS(sharedObject) {
-    var deferred = Q.defer();
-
-    var options = {
-        hostname: 'eas.admin.uillinois.edu',
-        port: 443,
-        path: '/eas/servlet/EasLogin?redirect=https://webprod.admin.uillinois.edu/ssa/servlet/SelfServiceLogin?appName=edu.uillinois.aits.SelfServiceLogin&dad=BANPROD1',
-        method: 'GET',
-        headers: {
-            'Host': 'eas.admin.uillinois.edu',
-            'Upgrade-Insecure-Requests': 1,
-            'Cookie': sharedObject.cookie.join(';'),
-            'User-Agent': 'Paw/2.1 (Macintosh; OS X/10.10.1) GCDHTTPRequest'
-        }
-    };
-
-    console.log('\nREQUEST'.request, options.hostname + options.path);
-
-    var req = https.request(options, (res) => {
-        console.log('STATUS'.result, res.statusCode);
-        if (config.debug) {
-            console.log('HEADERS'.data, res.headers);
-        }
-
-        res.on('data', (d) => {
-            // process.stdout.write(d);
-        });
-
-        res.on('end', () => {
-            combineCookies(res.headers['set-cookie']);
-            // console.log('cookie : ', cookie);
-            deferred.resolve(sharedObject);
-        });
-    });
-    req.end();
-
-    req.on('error', (e) => {
-        console.error(e);
-    });
-
-    return deferred.promise;
-}
-
-// login through EAS
-function loginEAS(sharedObject) {
-    var deferred = Q.defer();
-
-    var postData = querystring.stringify({
-        'inputEnterpriseId': config.netID,
-        'password': config.password,
-        'querystring': null,
-        'BTN_LOGIN': 'Login',
-    });
-
-    var options = {
-        jar: true,
-        hostname: 'eas.admin.uillinois.edu',
-        port: 443,
-        path: '/eas/servlet/login.do',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': postData.length,
-            'Cookie': sharedObject.cookie.join(';'),
-        }
-    };
-
-    console.log('\nREQUEST'.request, options.hostname + options.path);
-
-    var req = https.request(options, (res) => {
-        console.log('STATUS'.result, res.statusCode);
-        if (config.debug) {
-            console.log('HEADERS'.data, res.headers);
-        }
-
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            // console.log(`BODY: ${chunk}`);
-        });
-        res.on('end', () => {
-            combineCookies(res.headers['set-cookie']);
-            // console.log('No more data in response.')
-            deferred.resolve(sharedObject);
-        })
-    });
-
-    req.on('error', (e) => {
-        console.log(`problem with request: ${e.message}`);
-    });
-
-    // write data to request body
-    req.write(postData);
-    req.end();
-
-    return deferred.promise;
-};
-
-// get status
-function loginSelfService(sharedObject) {
-    var deferred = Q.defer();
-
-    var options = {
-        hostname: 'webprod.admin.uillinois.edu',
-        port: 443,
-        path: '/ssa/servlet/SelfServiceLogin?appName=edu.uillinois.aits.SelfServiceLogin&dad=BANPROD1',
-        method: 'GET',
-        headers: {
-            'Host': 'webprod.admin.uillinois.edu',
-            'Upgrade-Insecure-Requests': 1,
-            'Cookie': sharedObject.cookie.join(';'),
-            'User-Agent': 'Paw/2.1 (Macintosh; OS X/10.10.1) GCDHTTPRequest',
-            'Referer': 'https://eas.admin.uillinois.edu/eas/servlet/EasLogin',
-        }
-    };
-
-    console.log('\nREQUEST'.request, options.hostname + options.path);
-
-    var req = https.request(options, (res) => {
-        console.log('STATUS'.result, res.statusCode);
-        if (config.debug) {
-            console.log('HEADERS'.data, res.headers);
-        }
-
-        res.on('data', (d) => {
-            // process.stdout.write(d);
-        });
-
-        res.on('end', () => {
-            combineCookies(res.headers['set-cookie']);
-            console.log('redirect location'.result, res.headers['location']);
-            sharedObject.location = res.headers['location'];
-            deferred.resolve(sharedObject);
-        });
-    });
-    req.end();
-
-    req.on('error', (e) => {
-        console.error(e);
-    });
-
-    return deferred.promise;
-}
-
-function checkLoginStatus(sharedObject) {
-    var deferred = Q.defer();
-    for (var i in sharedObject.cookie) {
-        if (sharedObject.cookie[i].indexOf('ApplicationSessionId') == 0 && sharedObject.hasOwnProperty('location')) {
-            console.log('\ngot session id, login successfully.'.warn);
-            deferred.resolve(sharedObject);
-        }
-    }
-    deferred.reject('login failed.');
-    return deferred.promise;
-}
-
-function loginUiauthent(sharedObject) {
-    var deferred = Q.defer();
-
-    var location = sharedObject['location'];
-    location = location.substring(8);
-
-    var options = {
-        hostname: location.split('/')[0],
-        port: 443,
-        path: location.substring(location.indexOf('/'), location.length),
-        method: 'GET',
-        headers: {
-            'Host': 'ui2web1.apps.uillinois.edu',
-            'Upgrade-Insecure-Requests': 1,
-            'Cookie': sharedObject.cookie.join(';'),
-            'User-Agent': 'Paw/2.1 (Macintosh; OS X/10.10.1) GCDHTTPRequest',
-            'Referer': 'https://eas.admin.uillinois.edu/eas/servlet/EasLogin',
-        }
-    };
-
-    console.log('\nREQUEST'.request, options.hostname + options.path);
-
-    var data = '';
-
-    var req = https.request(options, (res) => {
-        console.log('STATUS'.result, res.statusCode);
-        if (config.debug) {
-            console.log('HEADERS'.data, res.headers);
-        }
-
-        res.on('data', (d) => {
-            data += d;
-            // process.stdout.write(d);
-        });
-
-        res.on('end', () => {
-            combineCookies(res.headers['set-cookie']);
-            // console.log('DATA'.data, data.data);
-            var regexp = /msg=([A-Za-z0-9.,+\-!%<>]*)"\>/g;
-            match_data = regexp.exec(data);
-            data = match_data[1].replace(/\+/g, ' ').replace(/<([a-zA-Z0-9%]*)>/g, ' ').replace('%3A', ':');
-            console.log('MSG'.result, data);
-            deferred.resolve(sharedObject);
-        });
-    });
-    req.end();
-
-    req.on('error', (e) => {
-        console.error(e);
-    });
-
-    return deferred.promise;
-}
 
 function getStudentInfoTermList(sharedObject) {
     var deferred = Q.defer();
@@ -309,7 +68,7 @@ function getStudentInfoTermList(sharedObject) {
         });
 
         res.on('end', () => {
-            combineCookies(res.headers['set-cookie']);
+            util.combineCookies(res.headers['set-cookie'], sharedObject);
             // console.log('DATA'.data, data.data);
             var regexp = /\<OPTION VALUE="([0-9]*)"\>([A-Za-z0-9\- ]*)\<\/OPTION\>/g;
             match_data = regexp.exec(data);
@@ -368,7 +127,7 @@ function requestStudentInfo(sharedObject) {
         });
 
         res.on('end', () => {
-            combineCookies(res.headers['set-cookie']);
+            util.combineCookies(res.headers['set-cookie'], sharedObject);
             data = data.replace(/([\r\n]*)/g, '').replace(/\<TR\>/g, '~').replace(/\<\/TR\>/g, '`');
             // console.log('DATA'.data, data.data);
             var match_data = data.match(/~([A-Za-z0-9\s=\":\\\/\-\(\)<>,&]*)`/g);
@@ -438,7 +197,7 @@ function getSubjectList(sharedObject) {
         });
 
         res.on('end', () => {
-            combineCookies(res.headers['set-cookie']);
+            util.combineCookies(res.headers['set-cookie'], sharedObject);
             // console.log('DATA'.data, data.data);
             var match_data = data.match(/\<OPTION VALUE=\"([A-Z]*)\"\>([a-zA-Z0-9.,'\/&\-\s]*)\<\/OPTION\>/g);
             var subjectList = [];
@@ -557,7 +316,7 @@ function getCourseList(sharedObject) {
             });
 
             res.on('end', () => {
-                combineCookies(res.headers['set-cookie']);
+                util.combineCookies(res.headers['set-cookie'], sharedObject);
                 // console.log('DATA'.data, data.data);
                 sharedObject.courseRawData = data;
                 fs.writeFile('requestCourseList.temp', data, (err) => {
@@ -584,7 +343,7 @@ function getCourseList(sharedObject) {
 }
 
 
-var util = require('util');
+// var util = require('util');
 var htmlparser = require("htmlparser2");
 
 function parseCourseList(sharedObject) {
@@ -699,11 +458,11 @@ function generateTreeQueryList(sharedObject) {
 
 console.log('\nrunning...'.warn);
 
-requestEAS(sharedObject)
-    .then(loginEAS)
-    .then(loginSelfService)
-    .then(checkLoginStatus)
-    .then(loginUiauthent)
+login.requestEAS(sharedObject)
+    .then(login.loginEAS)
+    .then(login.loginSelfService)
+    .then(login.checkLoginStatus)
+    .then(login.loginUiauthent)
     .then(getStudentInfoTermList)
     .then(requestStudentInfo)
     .then(getSubjectList)
