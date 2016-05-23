@@ -619,7 +619,7 @@ function parseCourseList(sharedObject) {
                 targetCourse++;
                 tree[tree.length - 1].courses[targetCourse] = {};
                 // tree[tree.length - 1].courses[targetCourse].course = tempText[2] + ' ' + tempText[3];
-                tree[tree.length - 1].courses[targetCourse].course = tempText.join(' ').replace(/\n/g, '').replace(/(^\s*)|(\s*$)/g, "");
+                tree[tree.length - 1].courses[targetCourse].course = tempText.join(' ').replace(/\n/g, '').replace(/(^\s*)|(\s*$)/g, "").replace(/\s+/g, ' ');
                 tree[tree.length - 1].courses[targetCourse].form = {};
                 tempText = [];
             }
@@ -685,6 +685,14 @@ function writeTree(sharedObject) {
         console.log('\ncourse tree saved'.result);
         deferred.resolve(sharedObject);
     });
+
+    return deferred.promise;
+}
+
+function generateTreeQueryList(sharedObject) {
+    var deferred = Q.defer();
+
+    deferred.resolve(sharedObject);
 
     return deferred.promise;
 }
