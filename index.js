@@ -40,6 +40,7 @@ switch (arguments[0]) {
             .then(course.getCourseList)
             .then(course.parseCourseList)
             .then(course.writeTree)
+            .then(course.generateCourseCodeList)
             .then(null, util.throwErr)
             .done();
         break;

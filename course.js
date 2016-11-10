@@ -298,8 +298,27 @@ module.exports = {
         return deferred.promise;
     },
 
-    generateTreeQueryList: function(sharedObject) {
+    generateCourseCodeList: function(sharedObject) {
         var deferred = Q.defer();
+
+        var data = '';
+
+        for (var i = 0; i < sharedObject.courseTree.length; i++) {
+            var subject = sharedObject.courseTree[i].code;
+            data += sharedObject.courseTree[i].code + ' ' + sharedObject.courseTree[i].subject + '\n';
+            for (var j = 0; j < sharedObject.courseTree[i].courses.length; j++) {
+                data += '\t' + subject + (sharedObject.courseTree[i].courses[j].course.match(/([0-9]{3})/))[1] + '[ ] ' + sharedObject.courseTree[i].courses[j].course + '\n';
+            }
+        }
+
+        fs.writeFile('courseCode.temp', data, (err) => {
+            if (err) {
+                deferred.reject(err)
+            };
+            console.log('\ncourse code generated'.result);
+            deferred.resolve(sharedObject);
+        });
+
 
         deferred.resolve(sharedObject);
 
