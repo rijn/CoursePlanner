@@ -21,6 +21,6 @@ module.exports = {
 
 2. Run
 ```
-npm start getcourselist
-npm start getstudentinfo
+npm run getcourselist
+npm run getstudentinfo
 ```
